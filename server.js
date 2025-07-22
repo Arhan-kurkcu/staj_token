@@ -52,6 +52,34 @@ sql.connect(dbConfig).then(pool => {
         }
     });
 
+    app.get("/", (req, res) => {
+        res.sendFile(path.join(__dirname, "views", "login.html"));
+    });
+
+    app.get("/register", (req, res) => {
+        res.sendFile(path.join(__dirname, "views", "register.html"));
+    });
+
+    // Kayıt POST isteği
+    app.post("/register", async (req, res) => {
+        const { name } = req.body;
+        console.log(`[REGISTER ATTEMPT] Kullanıcı: ${name}`);
+
+        try {
+            const result = await sql.connect(dbConfig)
+                .then(pool => pool.request()
+                    .input("name", sql.NVarChar, name)
+                    .query("INSERT INTO Customers (Name, CreatedAt) VALUES (@name, GETDATE())")
+                );
+
+            console.log("[REGISTER SUCCESS] Kayıt başarıyla tamamlandı.");
+            res.send(`<h2>Kayıt başarılı! Hoşgeldiniz, ${name}.</h2><a href="/">Giriş yap</a>`);
+        } catch (err) {
+            console.error("[ERROR] Kayıt sırasında hata oluştu:", err);
+            res.status(500).send("Kayıt sırasında bir hata oluştu.");
+        }
+    });
+
     // Sunucuyu başlat
     app.listen(port, () => {
         console.log(`[READY] Sunucu http://localhost:${3000} adresinde çalışıyor.`);
