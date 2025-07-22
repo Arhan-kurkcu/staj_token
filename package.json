@@ -3,14 +3,28 @@
   "version": "1.0.0",
   "main": "deneme.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.10.0"
+    "axios": "^1.10.0",
+    "body": "^5.1.0",
+    "dotenv": "^17.2.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "mssql": "^11.0.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arhan-kurkcu/staj_token.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Arhan-kurkcu/staj_token/issues"
+  },
+  "homepage": "https://github.com/Arhan-kurkcu/staj_token#readme",
   "devDependencies": {},
   "description": ""
 }
