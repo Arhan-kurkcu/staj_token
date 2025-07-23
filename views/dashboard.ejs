@@ -524,7 +524,7 @@
                     <i class="fas fa-bolt"></i>
                     Hızlı İşlemler
                 </h2>
-                
+            
                 <button class="action-btn primary" onclick="openAddTokenModal()">
                     <i class="fas fa-plus-circle"></i>
                     Token Ekle
@@ -542,6 +542,60 @@
                     <p style="color: #7f8c8d; font-size: 14px; line-height: 1.5;">
                         Token sistemi ile alışveriş yaparak puan kazanabilir ve bu puanları indirim olarak kullanabilirsiniz.
                     </p>
+                </div>
+            </div>
+
+            <!-- Dashboard'ınıza eklenecek scraper bölümü -->
+            <!-- Quick Actions bölümünden sonra ekleyin -->
+
+            <div class="scraper-section" style="margin-top: 30px;">
+                <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
+                    <h2 class="section-title">
+                        <i class="fas fa-spider"></i>
+                        Yelp Review Scraper
+                    </h2>
+                    
+                    <div class="scraper-form">
+                        <div class="form-group">
+                            <label for="yelpURL">Yelp Restaurant URL:</label>
+                            <input type="url" id="yelpURL" placeholder="https://www.yelp.com/biz/restaurant-name" style="width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; margin-bottom: 15px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxReviews">Maksimum Review Sayısı:</label>
+                            <input type="number" id="maxReviews" value="50" min="1" max="200" style="width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; margin-bottom: 15px;">
+                        </div>
+                        
+                        <button class="action-btn primary" onclick="startScraping()" id="scrapeBtn">
+                            <i class="fas fa-play"></i>
+                            Scraping Başlat
+                        </button>
+                        
+                        <div id="scraping-progress" style="display: none; margin-top: 15px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="spinner" style="width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                <span>Scraping devam ediyor...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews listesi bölümü -->
+            <div class="reviews-section" style="margin-top: 30px;">
+                <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 25px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
+                    <h2 class="section-title">
+                        <i class="fas fa-comments"></i>
+                        Son Çekilen Reviews
+                        <button class="action-btn secondary" onclick="loadReviews()" style="margin-left: auto; padding: 8px 16px; font-size: 12px;">
+                            <i class="fas fa-refresh"></i>
+                            Yenile
+                        </button>
+                    </h2>
+                    
+                    <div id="reviews-list">
+                        <!-- Reviews buraya yüklenecek -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -642,6 +696,87 @@
                 document.getElementById('success-message').style.display = 'none';
             }
         });
+
+        // Scraping işlemi başlatma
+        async function startScraping() {
+            const url = document.getElementById('yelpURL').value.trim();
+            const maxReviews = document.getElementById('maxReviews').value.trim();
+            
+            if (!url) {
+                alert('Lütfen geçerli bir Yelp URL\'si girin.');
+                return;
+            }
+            
+            document.getElementById('scrapeBtn').disabled = true;
+            document.getElementById('scraping-progress').style.display = 'flex';
+            
+            try {
+                const response = await fetch('/api/scrape-reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, maxReviews })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('success-message').textContent = result.message;
+                    document.getElementById('success-message').style.display = 'block';
+                    document.getElementById('error-message').style.display = 'none';
+                    
+                    // Reviews listesini güncelle
+                    loadReviews();
+                } else {
+                    document.getElementById('error-message').textContent = result.message;
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('success-message').style.display = 'none';
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Bir hata oluştu!';
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('success-message').style.display = 'none';
+            } finally {
+                document.getElementById('scrapeBtn').disabled = false;
+                document.getElementById('scraping-progress').style.display = 'none';
+            }
+        }
+
+        // Reviews listesini yükleme
+        async function loadReviews() {
+            try {
+                const response = await fetch('/api/reviews');
+                const reviews = await response.json();
+                
+                const reviewsList = document.getElementById('reviews-list');
+                reviewsList.innerHTML = '';
+                
+                if (reviews.length === 0) {
+                    reviewsList.innerHTML = '<p style="color: #7f8c8d; text-align: center;">Henüz hiç review çekilmedi.</p>';
+                    return;
+                }
+                
+                reviews.forEach(review => {
+                    const reviewItem = document.createElement('div');
+                    reviewItem.style.background = 'rgba(236, 240, 241, 0.8)';
+                    reviewItem.style.borderRadius = '10px';
+                    reviewItem.style.padding = '15px';
+                    reviewItem.style.marginBottom = '10px';
+                    reviewItem.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+                    
+                    reviewItem.innerHTML = `
+                        <strong style="color: #2c3e50;">${review.reviewerName}</strong>
+                        <p style="color: #7f8c8d; font-size: 12px; margin: 5px 0;">${new Date(review.date).toLocaleString('tr-TR')}</p>
+                        <p style="color: #34495e;">${review.text}</p>
+                    `;
+                    
+                    reviewsList.appendChild(reviewItem);
+                });
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+            }
+        }
     </script>
 </body>
 </html>

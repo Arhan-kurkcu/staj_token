@@ -5,6 +5,7 @@ const session = require("express-session");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const path = require("path");
+const YelpScraper = require('./yelp-scraper');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -45,9 +46,11 @@ const dbConfig = {
     server: 'localhost',
     port: 51538,
     database: 'ReviewDB',
-    options: { encrypt: false, enableArithAbort: true } // Burada boşluk ve karakter hatası vardı
+    options: { encrypt: false, enableArithAbort: true }
 };
 
+// YelpScraper örneğini oluştur
+const scraper = new YelpScraper(dbConfig);
 
 let pool;
 
@@ -400,6 +403,129 @@ app.post("/logout", (req, res) => {
         }
         res.redirect('/login');
     });
+});
+
+// Scraper başlatıcı fonksiyon
+async function initializeScraper() {
+    try {
+        await scraper.initializeDatabase();
+        console.log("[SUCCESS] Scraper hazır!");
+    } catch (err) {
+        console.error("[ERROR] Scraper başlatma hatası:", err);
+    }
+}
+
+// Scraper API endpoint'i
+app.post("/api/scrape-reviews", requireAuth, async (req, res) => {
+    const { yelpURL, maxReviews } = req.body;
+    
+    if (!yelpURL) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Yelp URL gerekli!' 
+        });
+    }
+
+    try {
+        console.log(`[SCRAPING] Başlatılıyor: ${yelpURL}`);
+        
+        const result = await scraper.scrapeYelpReviews(
+            yelpURL, 
+            maxReviews || 50
+        );
+        
+        res.json({
+            success: true,
+            message: 'Scraping başarıyla tamamlandı!',
+            data: {
+                restaurant: result.restaurant.name,
+                reviewsScraped: result.reviewsScraped,
+                reviewsSaved: result.reviewsSaved
+            }
+        });
+        
+    } catch (error) {
+        console.error("[ERROR] Scraping API hatası:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Scraping sırasında hata oluştu!',
+            error: error.message
+        });
+    }
+});
+
+// Reviews listesi API'si
+app.get("/api/reviews", requireAuth, async (req, res) => {
+    try {
+        const { restaurantId, limit = 20 } = req.query;
+        
+        let query = `
+            SELECT TOP (@limit)
+                r.ReviewID,
+                r.ReviewerName,
+                r.ReviewerLocation,
+                r.Rating,
+                r.ReviewText,
+                r.ReviewDate,
+                r.UsefulCount,
+                rest.Name as RestaurantName
+            FROM Reviews r
+            INNER JOIN Restaurants rest ON r.RestaurantID = rest.RestaurantID
+        `;
+        
+        const request = pool.request().input("limit", sql.Int, parseInt(limit));
+        
+        if (restaurantId) {
+            query += " WHERE r.RestaurantID = @restaurantId";
+            request.input("restaurantId", sql.Int, parseInt(restaurantId));
+        }
+        
+        query += " ORDER BY r.CreatedAt DESC";
+        
+        const result = await request.query(query);
+        
+        res.json({
+            success: true,
+            reviews: result.recordset
+        });
+        
+    } catch (error) {
+        console.error("[ERROR] Reviews API hatası:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Reviews yüklenirken hata oluştu!'
+        });
+    }
+});
+
+// Restaurants listesi API'si
+app.get("/api/restaurants", requireAuth, async (req, res) => {
+    try {
+        const result = await pool.request().query(`
+            SELECT 
+                RestaurantID,
+                Name,
+                Address,
+                Rating,
+                ReviewCount,
+                Categories,
+                CreatedAt
+            FROM Restaurants
+            ORDER BY CreatedAt DESC
+        `);
+        
+        res.json({
+            success: true,
+            restaurants: result.recordset
+        });
+        
+    } catch (error) {
+        console.error("[ERROR] Restaurants API hatası:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Restaurants yüklenirken hata oluştu!'
+        });
+    }
 });
 
 // 404 handler
