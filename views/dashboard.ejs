@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Token Sistemi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .welcome-section h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .welcome-section p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+
+        .stat-card.tokens::before {
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+        }
+
+        .stat-card.transactions::before {
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+        }
+
+        .stat-card.customer::before {
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .tokens .stat-icon {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+        }
+
+        .transactions .stat-icon {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+
+        .customer .stat-icon {
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .transactions-section,
+        .quick-actions {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .transactions-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #ecf0f1;
+            transition: all 0.3s ease;
+        }
+
+        .transaction-item:hover {
+            background: rgba(52, 152, 219, 0.05);
+            padding-left: 10px;
+            border-radius: 8px;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .transaction-icon.earn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+
+        .transaction-icon.spend {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .transaction-details h4 {
+            color: #2c3e50;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .transaction-details p {
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+
+        .transaction-amount {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .transaction-amount.positive {
+            color: #27ae60;
+        }
+
+        .transaction-amount.negative {
+            color: #e74c3c;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: rgba(149, 165, 166, 0.1);
+            color: #34495e;
+            border: 2px solid #bdc3c7;
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(149, 165, 166, 0.2);
+            border-color: #95a5a6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .user-info {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+            display: none;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="welcome-section">
+                <h1>Hoş Geldiniz, <%= user.Name %>!</h1>
+                <p><%= user.CustomerName ? user.CustomerName + ' Müşterisi' : 'Token Sistemi Kullanıcısı' %> • Üye olma: <%= new Date(user.CreatedAt).toLocaleDateString('tr-TR') %></p>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <%= user.Name.charAt(0).toUpperCase() %>
+                </div>
+                <form action="/logout" method="POST" style="display: inline;">
+                    <button type="submit" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card tokens">
+                <div class="stat-icon">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="stat-value"><%= tokens.TotalTokens || 0 %></div>
+                <div class="stat-label">Toplam Token</div>
+            </div>
+            
+            <div class="stat-card transactions">
+                <div class="stat-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <div class="stat-value"><%= transactions.length %></div>
+                <div class="stat-label">Son İşlemler</div>
+            </div>
+            
+            <div class="stat-card customer">
+                <div class="stat-icon">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="stat-value"><%= tokens.TokenCount || 0 %></div>
+                <div class="stat-label">Aktif Hesap</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Transactions Section -->
+            <div class="transactions-section">
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i>
+                    Son İşlemler
+                </h2>
+                
+                <div class="transactions-list">
+                    <% if (transactions && transactions.length > 0) { %>
+                        <% transactions.forEach(function(transaction) { %>
+                            <div class="transaction-item">
+                                <div class="transaction-info">
+                                    <div class="transaction-icon <%= transaction.TransactionType.toLowerCase() === 'earn' ? 'earn' : 'spend' %>">
+                                        <% if (transaction.TransactionType.toLowerCase() === 'earn') { %>
+                                            <i class="fas fa-plus"></i>
+                                        <% } else { %>
+                                            <i class="fas fa-minus"></i>
+                                        <% } %>
+                                    </div>
+                                    <div class="transaction-details">
+                                        <h4><%= transaction.Description || 'Token İşlemi' %></h4>
+                                        <p><%= new Date(transaction.CreatedAt).toLocaleDateString('tr-TR', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        }) %></p>
+                                    </div>
+                                </div>
+                                <div class="transaction-amount <%= transaction.TransactionType.toLowerCase() === 'earn' ? 'positive' : 'negative' %>">
+                                    <%= transaction.TransactionType.toLowerCase() === 'earn' ? '+' : '-' %><%= Math.abs(transaction.Amount) %> Token
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <h3>Henüz işlem bulunmuyor</h3>
+                            <p>İlk token işleminizi gerçekleştirin!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2 class="section-title">
+                    <i class="fas fa-bolt"></i>
+                    Hızlı İşlemler
+                </h2>
+                
+                <button class="action-btn primary" onclick="openAddTokenModal()">
+                    <i class="fas fa-plus-circle"></i>
+                    Token Ekle
+                </button>
+                
+                <button class="action-btn secondary" onclick="refreshPage()">
+                    <i class="fas fa-sync-alt"></i>
+                    Sayfayı Yenile
+                </button>
+                
+                <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 10px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 10px;">
+                        <i class="fas fa-info-circle"></i> Bilgi
+                    </h4>
+                    <p style="color: #7f8c8d; font-size: 14px; line-height: 1.5;">
+                        Token sistemi ile alışveriş yaparak puan kazanabilir ve bu puanları indirim olarak kullanabilirsiniz.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Token Modal -->
+    <div id="addTokenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Token Ekle</h2>
+                <span class="close" onclick="closeAddTokenModal()">&times;</span>
+            </div>
+            
+            <div id="success-message" class="success-message"></div>
+            <div id="error-message" class="error-message"></div>
+            
+            <form id="addTokenForm">
+                <div class="form-group">
+                    <label for="amount">Token Miktarı:</label>
+                    <input type="number" id="amount" name="amount" min="1" max="1000" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Açıklama:</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Token ekleme sebebi (opsiyonel)"></textarea>
+                </div>
+                
+                <button type="submit" class="action-btn primary">
+                    <i class="fas fa-plus"></i>
+                    Token Ekle
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openAddTokenModal() {
+            document.getElementById('addTokenModal').style.display = 'block';
+        }
+
+        function closeAddTokenModal() {
+            document.getElementById('addTokenModal').style.display = 'none';
+            document.getElementById('addTokenForm').reset();
+            document.getElementById('success-message').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        function refreshPage() {
+            location.reload();
+        }
+
+        // Modal dışına tıklandığında kapat
+        window.onclick = function(event) {
+            const modal = document.getElementById('addTokenModal');
+            if (event.target == modal) {
+                closeAddTokenModal();
+            }
+        }
+
+        // Form submit
+        document.getElementById('addTokenForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                amount: formData.get('amount'),
+                description: formData.get('description')
+            };
+            
+            try {
+                const response = await fetch('/api/tokens/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('success-message').textContent = result.message;
+                    document.getElementById('success-message').style.display = 'block';
+                    document.getElementById('error-message').style.display = 'none';
+                    
+                    // 2 saniye sonra sayfayı yenile
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    document.getElementById('error-message').textContent = result.message;
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('success-message').style.display = 'none';
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Bir hata oluştu!';
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('success-message').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

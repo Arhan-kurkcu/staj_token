@@ -270,12 +270,11 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// Register POST
 app.post("/register", async (req, res) => {
-    const { name, phone, address } = req.body;
+    const { name, phone } = req.body;
     console.log(`[REGISTER ATTEMPT] Kullanıcı: ${name}, Telefon: ${phone}`);
 
-    // Input validation
+    // 1. VALIDATION
     if (!validateName(name)) {
         return res.render('register', { 
             error: 'Ad en az 2, en fazla 100 karakter olmalıdır.',
@@ -293,38 +292,31 @@ app.post("/register", async (req, res) => {
     }
 
     try {
-        // Telefon numarası kontrolü
-        const existingUser = await pool
+        console.log(">>> SP ÇAĞIRILIYOR");
+
+        await pool
+            .request()
+            .input("Name", sql.NVarChar, name.trim())
+            .input("Phone", sql.NVarChar, phone)
+            .execute("InsertUserWithPhone");
+
+            console.log(">>> SP BAŞARIYLA TAMAMLANDI");
+
+        console.log(`[REGISTER SUCCESS] Kullanıcı SP ile başarıyla kaydedildi.`);
+
+        // 3. INSERTED USER'IN ID'sini çek
+        const userQuery = await pool
             .request()
             .input("phone", sql.NVarChar, phone)
-            .query("SELECT UserID FROM Users WHERE Phone = @phone");
+            .query("SELECT TOP 1 UserID FROM Users WHERE Phone = @phone ORDER BY CreatedAt DESC");
 
-        if (existingUser.recordset.length > 0) {
-            return res.render('register', { 
-                error: 'Bu telefon numarası zaten kayıtlı.',
-                success: null,
-                customers: []
-            });
-        }
+        const newUserId = userQuery.recordset[0]?.UserID;
 
-        // Yeni kullanıcı kaydet
-        const insertResult = await pool
-            .request()
-            .input("name", sql.NVarChar, name.trim())
-            .input("phone", sql.NVarChar, phone)
-            .query(`
-                INSERT INTO Users (Name, Phone, CreatedAt) 
-                OUTPUT INSERTED.UserID
-                VALUES (@name, @phone, GETDATE())
-            `);
-
-        const newUserId = insertResult.recordset[0].UserID;
-
-        // Varsayılan token hesabı oluştur (eğer customer varsa)
+        // 4. CUSTOMER VARSA TOKEN ATAMA (opsiyonel)
         const customerResult = await pool.request().query("SELECT TOP 1 CustomerID FROM Customers");
-        if (customerResult.recordset.length > 0) {
+        if (customerResult.recordset.length > 0 && newUserId) {
             const customerId = customerResult.recordset[0].CustomerID;
-            
+
             await pool
                 .request()
                 .input("userId", sql.Int, newUserId)
@@ -333,19 +325,24 @@ app.post("/register", async (req, res) => {
                     INSERT INTO Tokens (UserID, CustomerID, TokenValue, TokenType) 
                     VALUES (@userId, @customerId, 0, 'WELCOME')
                 `);
+
+            console.log(`[TOKEN SUCCESS] Token, UserID ${newUserId} için oluşturuldu.`);
         }
 
-        console.log("[REGISTER SUCCESS] Kayıt başarıyla tamamlandı.");
+        // 5. BAŞARILI GERİ DÖNÜŞ
         res.render('register', { 
             error: null,
             success: 'Kayıt başarılı! Şimdi giriş yapabilirsiniz.',
             customers: []
         });
-        
+
     } catch (err) {
-        console.error("[ERROR] Kayıt hatası:", err);
+        // 6. HATA LOGU
+        console.error("[REGISTER ERROR]", err);
+
+        const errorMessage = err.originalError?.info?.message || 'Kayıt sırasında bir hata oluştu.';
         res.render('register', { 
-            error: 'Kayıt sırasında bir hata oluştu.',
+            error: errorMessage,
             success: null,
             customers: []
         });
