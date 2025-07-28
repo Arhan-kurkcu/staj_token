@@ -1,0 +1,1 @@
+await page.goto(url, { waitUntil: 'domcontentloaded' });

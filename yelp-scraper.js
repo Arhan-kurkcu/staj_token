@@ -366,4 +366,4 @@ if (require.main === module) {
     main().catch(console.error);
 }
 
-module.exports = YelpScraper;
+module.exports = YelpScraper;   
